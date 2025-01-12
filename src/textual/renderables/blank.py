@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from rich.console import ConsoleOptions, Console, RenderResult
+from rich.console import Console, ConsoleOptions, RenderResult
 from rich.segment import Segment
 from rich.style import Style
 
-from ..color import Color
+from textual.color import Color
 
 
 class Blank:
@@ -25,9 +25,3 @@ class Blank:
         for _ in range(height):
             yield segment
             yield line
-
-
-if __name__ == "__main__":
-    from rich import print
-
-    print(Blank("red"))
