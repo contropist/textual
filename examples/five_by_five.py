@@ -1,30 +1,27 @@
 """Simple version of 5x5, developed for/with Textual."""
 
+from __future__ import annotations
+
 from pathlib import Path
-from typing import cast
-import sys
+from typing import TYPE_CHECKING, cast
 
-if sys.version_info >= (3, 8):
-    from typing import Final
-else:
-    from typing_extensions import Final
-
-from textual.containers import Horizontal
 from textual.app import App, ComposeResult
-from textual.screen import Screen
-from textual.widget import Widget
-from textual.widgets import Footer, Button, Static
+from textual.binding import Binding
+from textual.containers import Horizontal
 from textual.css.query import DOMQuery
 from textual.reactive import reactive
-from textual.binding import Binding
+from textual.screen import Screen
+from textual.widget import Widget
+from textual.widgets import Button, Footer, Label, Markdown
 
-from rich.markdown import Markdown
+if TYPE_CHECKING:
+    from typing_extensions import Final
 
 
 class Help(Screen):
     """The help screen for the application."""
 
-    BINDINGS = [("escape,space,q,question_mark", "pop_screen", "Close")]
+    BINDINGS = [("escape,space,q,question_mark", "app.pop_screen", "Close")]
     """Bindings for the help screen."""
 
     def compose(self) -> ComposeResult:
@@ -33,10 +30,10 @@ class Help(Screen):
         Returns:
             ComposeResult: The result of composing the help screen.
         """
-        yield Static(Markdown(Path(__file__).with_suffix(".md").read_text()))
+        yield Markdown(Path(__file__).with_suffix(".md").read_text())
 
 
-class WinnerMessage(Static):
+class WinnerMessage(Label):
     """Widget to tell the user they have won."""
 
     MIN_MOVES: Final = 14
@@ -90,11 +87,10 @@ class GameHeader(Widget):
         Returns:
             ComposeResult: The result of composing the game header.
         """
-        yield Horizontal(
-            Static(self.app.title, id="app-title"),
-            Static(id="moves"),
-            Static(id="progress"),
-        )
+        with Horizontal():
+            yield Label(self.app.title, id="app-title")
+            yield Label(id="moves")
+            yield Label(id="progress")
 
     def watch_moves(self, moves: int):
         """Watch the moves reactive and update when it changes.
@@ -102,7 +98,7 @@ class GameHeader(Widget):
         Args:
             moves (int): The number of moves made.
         """
-        self.query_one("#moves", Static).update(f"Moves: {moves}")
+        self.query_one("#moves", Label).update(f"Moves: {moves}")
 
     def watch_filled(self, filled: int):
         """Watch the on-count reactive and update when it changes.
@@ -110,7 +106,7 @@ class GameHeader(Widget):
         Args:
             filled (int): The number of cells that are currently on.
         """
-        self.query_one("#progress", Static).update(f"Filled: {filled}")
+        self.query_one("#progress", Label).update(f"Filled: {filled}")
 
 
 class GameCell(Button):
@@ -135,7 +131,6 @@ class GameCell(Button):
         Args:
             row (int): The row of the cell.
             col (int): The column of the cell.
-
         """
         super().__init__("", id=self.at(row, col))
         self.row = row
@@ -164,8 +159,8 @@ class Game(Screen):
 
     BINDINGS = [
         Binding("n", "new_game", "New Game"),
-        Binding("question_mark", "push_screen('help')", "Help", key_display="?"),
-        Binding("q", "quit", "Quit"),
+        Binding("question_mark", "app.push_screen('help')", "Help", key_display="?"),
+        Binding("q", "app.quit", "Quit"),
         Binding("up,w,k", "navigate(-1,0)", "Move Up", False),
         Binding("down,s,j", "navigate(1,0)", "Move Down", False),
         Binding("left,a,h", "navigate(0,-1)", "Move Left", False),
@@ -195,8 +190,7 @@ class Game(Screen):
         Args:
             playable (bool): Should the game currently be playable?
         """
-        for cell in self.query(GameCell):
-            cell.disabled = not playable
+        self.query_one(GameGrid).disabled = not playable
 
     def cell(self, row: int, col: int) -> GameCell:
         """Get the cell at a given location.
@@ -308,10 +302,10 @@ class Game(Screen):
 class FiveByFive(App[None]):
     """Main 5x5 application class."""
 
-    CSS_PATH = "five_by_five.css"
+    CSS_PATH = "five_by_five.tcss"
     """The name of the stylesheet for the app."""
 
-    SCREENS = {"help": Help()}
+    SCREENS = {"help": Help}
     """The pre-loaded screens for the application."""
 
     BINDINGS = [("ctrl+d", "toggle_dark", "Toggle Dark Mode")]
